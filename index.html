@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ร้านเจ๊หมายเกาเหลาเลือดหมู</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 1rem;
+      background: #fff8f0;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      cursor: pointer;
+    }
+    .menu-item img {
+      width: 80px;
+      height: 80px;
+      border-radius: 0.5rem;
+      margin-right: 1rem;
+    }
+    .menu-details {
+      flex-grow: 1;
+    }
+    .counter {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    button {
+      padding: 0.3rem 0.8rem;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    #submitBtn {
+      width: 100%;
+      margin-top: 2rem;
+      padding: 1rem;
+      font-size: 1.2rem;
+      background-color: #ff7f50;
+      color: white;
+      border: none;
+      border-radius: 1rem;
+    }
+    .options {
+      margin: 1rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .options label {
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>ร้านเจ๊หมาย</h1>
+  <h2 id="tableNumber"></h2>
+
+  <div class="options">
+    <label>
+      <input type="radio" name="eatType" value="ทานที่ร้าน" checked> ทานที่ร้าน
+    </label>
+    <label>
+      <input type="radio" name="eatType" value="กลับบ้าน"> กลับบ้าน
+    </label>
+  </div>
+
+  <div id="menuList"></div>
+
+  <button id="submitBtn" onclick="submitOrder()">ส่งรายการอาหาร</button>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const table = urlParams.get('t') || 'ไม่ระบุ';
+    document.getElementById('tableNumber').innerText = `โต๊ะหมายเลข ${table}`;
+
+    const menuData = [
+      { key: 'pork_leg', name: 'ข้าวขาหมู', price: 50 },
+      { key: 'soup', name: 'เกาเหลา', price: 80 },
+      { key: 'noodle', name: 'ก๋วยจั๊บ', price: 80 },
+      { key: 'fried_pork', name: 'ข้าวหมูทอด', price: 50 }
+    ];
+
+    const order = {};
+    const specialRequests = {};
+
+    function updateQty(key, change) {
+      order[key] = Math.max(0, (order[key] || 0) + change);
+      document.getElementById(key).innerText = order[key];
+    }
+
+    function toggleSpecial(key) {
+      specialRequests[key] = !specialRequests[key];
+      document.getElementById(`special_${key}`).innerText = specialRequests[key] ? 'สั่งพิเศษ (+10 บาท)' : '';
+    }
+
+    function renderMenu() {
+      const menuList = document.getElementById('menuList');
+      menuList.innerHTML = '';
+      menuData.forEach(item => {
+        order[item.key] = 0;
+        specialRequests[item.key] = false;
+
+        const div = document.createElement('div');
+        div.className = 'menu-item';
+        div.setAttribute('onclick', `toggleSpecial('${item.key}')`);
+        div.innerHTML = `
+          <img src="https://via.placeholder.com/80?text=${encodeURIComponent(item.name)}" alt="${item.name}">
+          <div class="menu-details">
+            <strong>${item.name}</strong><br>ราคา ${item.price} บาท<br><span id="special_${item.key}"></span>
+          </div>
+          <div class="counter">
+            <button onclick="event.stopPropagation(); updateQty('${item.key}', -1)">-</button>
+            <span id="${item.key}">0</span>
+            <button onclick="event.stopPropagation(); updateQty('${item.key}', 1)">+</button>
+          </div>
+        `;
+        menuList.appendChild(div);
+      });
+    }
+
+    renderMenu();
+
+    function submitOrder() {
+      const eatType = document.querySelector('input[name="eatType"]:checked').value;
+      const payload = {
+        table,
+        eatType,
+        order,
+        special: specialRequests
+      };
+
+      fetch('https://script.google.com/macros/s/AKfycbw7eYcwjxuC39d6J9EZmsDSZCvr1OPUGLNvCmWMiouKBjKRl-Gbroupl1mf3u9ADNSz/exec', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(res => res.text())
+      .then(res => {
+        alert("ส่งออเดอร์เรียบร้อย!");
+      })
+      .catch(err => {
+        alert("เกิดข้อผิดพลาดในการส่งออเดอร์");
+        console.error(err);
+      });
+    }
+  </script>
+</body>
+</html>
